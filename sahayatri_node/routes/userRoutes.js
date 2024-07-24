@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const userController = require('../controllers/userControllers');
 const { authGuard, checkAccountLockout, checkPasswordExpiry, validatePasswordStrength } = require('../middleware/authGuard');
+const { auditCreate, auditUpdate, auditDelete } = require('../middleware/auditTrail');
 
 // User registration route
 router.post('/register', validatePasswordStrength, userController.createUser);
@@ -15,6 +16,6 @@ router.get('/get_favourite/:id', userController.getFavourites);
 router.post('/create_feedback/:id', userController.createFeedback);
 router.delete('/delete_favourite/:id', userController.deleteFavourite);
 
-router.post('/update_user', authGuard, auditUpdate, userController.updateUser);
+router.post('/update_user', authGuard, auditUpdate, userController.updateUserProfile);
 router.delete('/delete_user', authGuard, auditDelete, userController.deleteUser);
 module.exports = router;

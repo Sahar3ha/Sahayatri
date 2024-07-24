@@ -1,5 +1,5 @@
-const AuditLog = require('../models/auditModel');
-const User = require('../models/User'); // Adjust the path to your User model
+const AuditLog = require('../model/auditModel');
+const User = require('../model/userModel'); // Adjust the path to your User model
 
 const auditCreate = async (req, res, next) => {
     const { _id: userId } = req.user; // Assuming `req.user` contains the authenticated user

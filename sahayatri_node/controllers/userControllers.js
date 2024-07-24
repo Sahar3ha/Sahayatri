@@ -331,8 +331,71 @@ const deleteUser = async (req, res) => {
         });
     }
   };
-
+  const updateUserProfile = async (req, res) => {
+    const userId = req.params.id;
+    console.log(req.body);
+  
+    const { firstName, lastName, email, password,} = req.body;
+    if (!firstName || !lastName || !email) {
+      return res.json({
+        success: false,
+        message: "Please enter all required fields."
+      });
+    }
+  
+    try {
+      const user = await Users.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+  
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.email = email;
+  
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+      }
+  
+      if (service) {
+        user.service = service;
+        user.provider = true;
+      }
+  
+      if (price !== undefined) {
+        user.price = price;
+      }
+  
+      await user.save();
+  
+      res.json({
+        success: true,
+        message: "User profile updated successfully",
+        user: {
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          ...(service && { service }),
+          ...(price !== undefined && { price })
+        }
+      });
+  
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      res.status(500).json({
+        success: false,
+        message: "Server error",
+        error: error.message
+      });
+    }
+  };
 
 module.exports = {
-    createUser,loginUser,createFavourites,getFavourites,getSingleUser,createFeedback,deleteFavourite,deleteUser
+    createUser,loginUser,createFavourites,getFavourites,getSingleUser,createFeedback,deleteFavourite,deleteUser,updateUserProfile
 }
