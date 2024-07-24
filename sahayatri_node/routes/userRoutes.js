@@ -15,4 +15,6 @@ router.get('/get_favourite/:id', userController.getFavourites);
 router.post('/create_feedback/:id', userController.createFeedback);
 router.delete('/delete_favourite/:id', userController.deleteFavourite);
 
+router.post('/update_user', authGuard, auditUpdate, userController.updateUser);
+router.delete('/delete_user', authGuard, auditDelete, userController.deleteUser);
 module.exports = router;

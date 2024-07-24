@@ -312,9 +312,27 @@ const deleteFavourite = async(req,res)=>{
             
         }
 }
-
+const deleteUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        await Users.findByIdAndDelete(userId);
+        await Favourites.deleteMany({ providerId:userId });
+        await Feedback.deleteMany({ providerId:userId });
+  
+        res.json({
+            success: true,
+            message: 'User deleted successfully'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+  };
 
 
 module.exports = {
-    createUser,loginUser,createFavourites,getFavourites,getSingleUser,createFeedback,deleteFavourite
+    createUser,loginUser,createFavourites,getFavourites,getSingleUser,createFeedback,deleteFavourite,deleteUser
 }
