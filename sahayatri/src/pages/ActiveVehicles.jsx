@@ -1,18 +1,20 @@
-import feedback from "../images/icons/feedback.png";
-import { toast } from "react-toastify";
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { createFavourtieApi, getActivatedVehiclesApi } from "../apis/Api";
-import favIcon from "../images/icons/fav.png";
-import favIconActive from "../images/icons/added.png";
-import Example from "../components/Navbar";
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { createFavourtieApi, getActivatedVehiclesApi } from '../apis/Api';
+import favIcon from '../images/icons/fav.png';
+import favIconActive from '../images/icons/added.png';
+import feedback from '../images/icons/feedback.png';
+import Example from '../components/Navbar';
+import AuthPromptModal from '../components/AuthPrompt';
+import { toast } from 'react-toastify';
 
 const ActiveVehicles = () => {
   const [vehicles, setVehicles] = useState([]);
   const [activeIcons, setActiveIcons] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredVehicles, setFilteredVehicles] = useState([]);
-  console.log(vehicles);
+  const [showModal, setShowModal] = useState(false);
+
   useEffect(() => {
     getActivatedVehiclesApi().then((res) => {
       setVehicles(res.data.vehicles);
@@ -66,13 +68,30 @@ const ActiveVehicles = () => {
           console.log(err.message);
         });
     } else {
-      console.log("User data not found in localStorage");
+      setShowModal(true);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
+  const handleProtectedNavigation = (e, path) => {
+    e.preventDefault();
+
+    const storedUserData = localStorage.getItem("user");
+
+    if (storedUserData) {
+      window.location.href = path;
+    } else {
+      setShowModal(true);
     }
   };
 
   return (
     <>
       <Example />
+      <AuthPromptModal show={showModal} onClose={handleCloseModal} />
       <div className="container mx-auto my-8">
         <div className="mb-4">
           <input
@@ -89,12 +108,13 @@ const ActiveVehicles = () => {
               key={item._id}
               className="relative bg-white border shadow-md rounded-md p-4 transition-all duration-300"
             >
-              <Link
-                to={`/user/view/${item._id}`}
+              <a
+                href={`/user/view/${item._id}`}
                 className="text-lg font-semibold block hover:text-blue-500"
+                onClick={(e) => handleProtectedNavigation(e, `/user/view/${item._id}`)}
               >
                 {item.vehicleName || ""}
-              </Link>
+              </a>
               <p className="text-gray-600">{`From: ${item.from || ""}`}</p>
               <p className="text-gray-600">{`To: ${item.to || ""}`}</p>
               <div className="flex justify-end">
@@ -111,14 +131,15 @@ const ActiveVehicles = () => {
                     className="w-full h-auto max-h-6 max-h-xs"
                   />
                 </button>
-                <button className="text-white p-2 rounded-full bg-green-500">
-                  <Link to={`/user/userfeedback/${item._id}`}>
-                    <img
-                      src={feedback}
-                      alt="Feedback Icon"
-                      className="w-full h-auto max-h-6 max-h-xs"
-                    />
-                  </Link>
+                <button
+                  className="text-white p-2 rounded-full bg-green-500"
+                  onClick={(e) => handleProtectedNavigation(e, `/user/userfeedback/${item._id}`)}
+                >
+                  <img
+                    src={feedback}
+                    alt="Feedback Icon"
+                    className="w-full h-auto max-h-6 max-h-xs"
+                  />
                 </button>
               </div>
             </div>

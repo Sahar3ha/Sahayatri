@@ -6,28 +6,28 @@ const authGuard = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
         return res.json({
-            success : false,
-            message : "Authorization header not found!"
+            success: false,
+            message: "Authorization header not found!"
         });
     }
 
     const token = authHeader.split(' ')[1];
     if (!token) {
         return res.json({
-            success:false,
+            success: false,
             message: "Token not found!"
         });
     }
 
     try {
-        const decodeUser = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decodeUser;
+        const decodeUser = jwt.verify(token, process.env.JWT_TOKEN_SECRET);
+        req.user = decodeUser; // Set the entire decoded token object
         next();
     } catch (error) {
         console.log(error);
         res.json({
             success: false,
-            message : "Invalid Token"
+            message: "Invalid Token"
         });
     }
 };

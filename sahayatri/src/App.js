@@ -31,6 +31,9 @@ import Location from './pages/ShowLocation';
 import AdminEditTransport from './pages/Admin/AdminEditTransport';
 import NotificationPage from './pages/notification';
 import Footer from './components/Footer';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import UpdateProfile from './pages/UpdateProfile';
 
 function App() {
 
@@ -40,8 +43,14 @@ function App() {
 
       <ToastContainer/>
       <Routes>
+      <Route path='/' element={<Dashboard/>}/>
+      <Route path='/map' element={<Map_Route/>}/>
+      <Route path='/userTransport' element={<ActiveVehicles/>}/>
+
         <Route path='/login' element={<Login/>}/>
         <Route path='/register' element={<Register/>}/>
+        <Route path='/forgot-password' element={<ForgotPassword/>}/>
+        <Route path='/resetPassword/:token' element={<ResetPassword/>}/>
         
         <Route element={<UserRoutes/>}>
 
@@ -50,6 +59,8 @@ function App() {
           <Route path='/userTransport' element={<ActiveVehicles/>}/>
           <Route path='/user/view/:id' element={<RouteDisplayPage/>}/>
           <Route path='/profile' element={<Profile/>}/>
+          <Route path='/updateProfile' element={<UpdateProfile/>}/>
+
           <Route path='/notification' element={<NotificationPage/>}/>
 
           <Route path='/user/userFeedback/:id' element={<UserFeedbackPage/>}/>
@@ -65,9 +76,6 @@ function App() {
           <Route path='/lroute' element={<RoutingMachineExample/>}/>
           <Route path='/review' element= {<Reviews/>}/>
           <Route path='/admin/editTransport/:id' element={<AdminEditTransport/>}/>
-
-
-
         </Route>
 
         <Route path='/showl' element={<ShowLocation/>}/>

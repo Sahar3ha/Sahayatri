@@ -32,6 +32,8 @@ const userSchema = new mongoose.Schema({
     lockUntil: { 
         type: Date 
     },
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
     isAdmin: {
         type: Boolean,
         default: false

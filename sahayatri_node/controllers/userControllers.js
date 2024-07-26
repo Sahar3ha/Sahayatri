@@ -1,10 +1,11 @@
 
 const Users = require("../model/userModel")
 const bcrypt = require("bcrypt")
+const crypto = require('crypto');
 const jwt = require("jsonwebtoken")
 const Favourites = require("../model/favouritesModel")
 const Feedback = require("../model/feedbackmodel")
-
+const sendEmail =  require("../middleware/sendEmail")
 // Utility function to validate password complexity
 const validatePassword = (password) => {
     const minLength = 8;
@@ -194,46 +195,32 @@ const getSingleUser= async(req,res)=>{
     }
 }
 
-const createFavourites = async(req,res) =>{
-    const{userId,vehicleId}=req.body;
-    if(!userId || !vehicleId ){
-        return res.json({
-            success : false,
-            message : "All fields are required"
-        })
-    }
-    try {
+const createFavourites = async (req, res) => {
+    const { collectionName, newValue } = req.body;
+    const { userId, vehicleId } = newValue;
 
-        const favourite = await Favourites.findOne({
-            userId:userId,
-            vehicleId:vehicleId
-        }) 
-        if(favourite){
-            return res.json({
-                success : false,
-                message : "You've already added it"
-            })
-        }
-        const favourites = new Favourites({
-            userId : userId,
-            vehicleId : vehicleId,
-        })
-        await favourites.save();
-        res.status(200).json({
-            success : true,
-            message : "Added Favourite successfully",
-            data : favourites
-        })
-        
+    try {
+        const favourite = new Favourites({
+            userId,
+            vehicleId
+        });
+
+        await favourite.save();
+
+        res.json({
+            success: true,
+            message: 'Favourite created successfully',
+            favourite
+        });
     } catch (error) {
-        console.log(error);    
-        res.status(500).json({
-            success : false,
-            message : error
-        })
-        
+        console.error('Error creating favourite:', error);
+        res.json({
+            success: false,
+            message: 'Error creating favourite'
+        });
     }
-}
+};
+
 
 
 const getFavourites = async(req, res) =>{
@@ -257,28 +244,33 @@ const getFavourites = async(req, res) =>{
         
     }
 }
-const deleteFavourite = async(req,res)=>{
+const deleteFavourite = async (req, res) => {
+    const { id } = req.params;
+
     try {
-        const deleteFavourite = await Favourites.findByIdAndDelete(req.params.id);
-        if(!deleteFavourite){
+        const favourite = await Favourites.findById(id);
+
+        if (!favourite) {
             return res.json({
-                success:false,
-                message:"Not found"
-            })
+                success: false,
+                message: 'Favourite not found'
+            });
         }
+
+        await favourite.deleteOne();
+
         res.json({
-            success : true,
-            message:"Favourite Removed"
-        })
+            success: true,
+            message: 'Favourite deleted successfully'
+        });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            success:false,
-            message:"Server Error"
-        })
-        
+        console.error('Error deleting favourite:', error);
+        res.json({
+            success: false,
+            message: 'Error deleting favourite'
+        });
     }
-}
+};
 
     const createFeedback = async(req,res)=>{
         const vehicleId = req.params.id;
@@ -332,70 +324,120 @@ const deleteUser = async (req, res) => {
     }
   };
   const updateUserProfile = async (req, res) => {
-    const userId = req.params.id;
-    console.log(req.body);
-  
-    const { firstName, lastName, email, password,} = req.body;
-    if (!firstName || !lastName || !email) {
-      return res.json({
-        success: false,
-        message: "Please enter all required fields."
-      });
-    }
-  
+    const { id: userId } = req.user;
+    const { firstName, lastName, email } = req.body;
+
     try {
-      const user = await Users.findById(userId);
-  
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found"
-        });
-      }
-  
-      user.firstName = firstName;
-      user.lastName = lastName;
-      user.email = email;
-  
-      if (password) {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(password, salt);
-      }
-  
-      if (service) {
-        user.service = service;
-        user.provider = true;
-      }
-  
-      if (price !== undefined) {
-        user.price = price;
-      }
-  
-      await user.save();
-  
-      res.json({
-        success: true,
-        message: "User profile updated successfully",
-        user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          ...(service && { service }),
-          ...(price !== undefined && { price })
+        const user = await Users.findById(userId);
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: 'User not found'
+            });
         }
-      });
-  
+
+        user.firstName = firstName;
+        user.lastName = lastName;
+        user.email = email;
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            user
+        });
     } catch (error) {
-      console.error('Error updating user profile:', error);
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message
-      });
+        console.error('Error updating profile:', error);
+        res.json({
+            success: false,
+            message: 'Error updating profile'
+        });
     }
-  };
+};
+
+  const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await Users.findOne({ email });
+        if (!user) {
+            return res.json({
+                success: false,
+                message: 'User not found.'
+            });
+        }
+
+        // Generate a reset token
+        const resetToken = crypto.randomBytes(20).toString('hex');
+
+        // Hash and set the reset token in the database
+        user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // Token expires in 10 minutes
+
+        await user.save();
+
+        // Create reset URL
+        const resetUrl = `${req.protocol}://${req.get('host')}/resetPassword/${resetToken}`;
+
+        // Send the email
+        const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+
+        await sendEmail({
+            email: user.email,
+            subject: 'Password Reset Token',
+            message
+        });
+
+        res.json({
+            success: true,
+            message: 'Email sent.'
+        });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.json({ success: false, message: 'Server error.' });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    const resetToken = req.params.token;
+
+    // Hash the token and compare it to the database
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    try {
+        const user = await Users.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: 'Invalid token or token has expired.'
+            });
+        }
+
+        // Set the new password
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(req.body.password, salt);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Password reset successful.'
+        });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.json({ success: false, message: 'Server error.' });
+    }
+};
+
 
 module.exports = {
-    createUser,loginUser,createFavourites,getFavourites,getSingleUser,createFeedback,deleteFavourite,deleteUser,updateUserProfile
+    createUser,loginUser,createFavourites,getFavourites,getSingleUser,createFeedback,deleteFavourite,deleteUser,updateUserProfile,forgotPassword,resetPassword
 }

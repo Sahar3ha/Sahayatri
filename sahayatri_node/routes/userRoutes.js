@@ -10,12 +10,19 @@ router.post('/register', validatePasswordStrength, userController.createUser);
 router.post('/login', checkAccountLockout, checkPasswordExpiry, userController.loginUser);
 
 // Other routes
-router.get('/get_user/:id', userController.getSingleUser);
-router.post('/create_favourite', userController.createFavourites);
-router.get('/get_favourite/:id', userController.getFavourites);
-router.post('/create_feedback/:id', userController.createFeedback);
-router.delete('/delete_favourite/:id', userController.deleteFavourite);
+router.get('/get_user/:id', authGuard, userController.getSingleUser);
+router.post('/create_favourite', authGuard, auditCreate, userController.createFavourites);
+router.get('/get_favourite/:id', authGuard, userController.getFavourites);
+router.post('/create_feedback/:id', authGuard, auditCreate, userController.createFeedback);
+router.delete('/delete_favourite/:id', authGuard, auditDelete, userController.deleteFavourite);
 
-router.post('/update_user', authGuard, auditUpdate, userController.updateUserProfile);
+router.put('/update_user', authGuard, auditUpdate, userController.updateUserProfile);
 router.delete('/delete_user', authGuard, auditDelete, userController.deleteUser);
+
+// Forgot password route
+router.post('/forgotPassword', userController.forgotPassword);
+
+// Reset password route
+router.put('/resetPassword/:token', userController.resetPassword);
+
 module.exports = router;
